@@ -1,3 +1,4 @@
+# Alex Jian Zheng
 import random
 from numpy import zeros, sign
 from math import exp, log
