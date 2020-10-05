@@ -88,19 +88,22 @@ class LogReg:
 
         return logprob, float(num_right) / float(len(examples))
 
-    def sg_update(self, train_example):
+    def sg_update(self, train_example, regularization = 0):
         """
         Compute a stochastic gradient update to improve the log likelihood.
 
         :param train_example: The example to take the gradient with respect to
+        :param regularization: default 0
         :return: The current vector of parameters
         """
 
         # Your code here
         # (y - sigmoid(beta dot x)) dot x times learning rate
+        #learning_rate_updated=abs(step - self.learning_rate)
         gradient = zeros(len(self.beta))
         gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
-        self.beta += gradient * self.learning_rate
+        #self.beta += gradient * self.learning_rate
+        self.beta += (gradient-self.beta*regularization*2) * self.learning_rate
         return self.beta
 
 
@@ -150,6 +153,8 @@ if __name__ == "__main__":
                            type=str, default="vocab", required=False)
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
+    argparser.add_argument("--regularization", help="Regularization parameter",
+                           type=float, default=0, required=False)
 
     args = argparser.parse_args()
     train, test, vocab = read_dataset(args.positive, args.negative, args.vocab)
@@ -163,8 +168,8 @@ if __name__ == "__main__":
     update_number = 0
     for pp in range(args.passes):
         for ii in train:
+            lr.sg_update(ii,args.regularization)
             update_number += 1
-            lr.sg_update(ii)
 
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)

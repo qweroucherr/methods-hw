@@ -27,10 +27,13 @@ What you have to do
 Coding (25 points):
 
 1. Understand how the code is creating feature vectors (this will help you code the solution and to do the later analysis).  You don't actually need to write any code for this, however.
-2. (Optional) Store necessary data in the constructor so you can do classification later.  
+   Feature vectors are created on term frequency, the features are stored in the vocab file, and the cases are lines in positive and negative files.
+2. (Optional) Store necessary data in the constructor so you can do classification later. 
+   ii.prediction? 
 3. You'll likely need to write some code to get the best/worst features (see below).
-3. Modify the _sg update_ function to perform non-regularized updates.
-4. (Extra Credit) Modify the _sg update_ function so that it finds regularized updates.
+   zip(beta, vocab) into a dict, then sort?
+4. Modify the _sg update_ function to perform non-regularized updates.
+5. (Extra Credit) Modify the _sg update_ function so that it finds regularized updates.
 
 Analysis (5 points):
 
