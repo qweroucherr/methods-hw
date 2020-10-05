@@ -1,6 +1,6 @@
 # Alex Jian Zheng
 import random
-from numpy import zeros, sign
+from numpy import zeros, sign, dot
 from math import exp, log
 from collections import defaultdict
 
@@ -15,7 +15,7 @@ random.seed(kSEED)
 def sigmoid(score, threshold=20.0):
     """
     Note: Prevents overflow of exp by capping activation at 20.
-
+    The `sign` function returns ``-1 if x < 0, 0 if x==0, 1 if x > 0``
     :param score: A real valued number to convert into a number between 0 and 1
     """
 
@@ -41,9 +41,11 @@ class Example:
         self.nonzero = {}
         self.y = label
         self.x = zeros(len(vocab))
+        #self.prediction = 0
         for word, count in [x.split(":") for x in words]:
             if word in vocab:
                 assert word != kBIAS, "Bias can't actually appear in document"
+                # Creating feature vectors based on term frequency
                 self.x[vocab.index(word)] += float(count)
                 self.nonzero[vocab.index(word)] = word
         self.x[0] = 1
@@ -79,8 +81,10 @@ class LogReg:
                 logprob += log(1.0 - p)
 
             # Get accuracy
+            #ii.prediction = 1 - ii.y
             if abs(ii.y - p) < 0.5:
                 num_right += 1
+                #ii.prediction = ii.y
 
         return logprob, float(num_right) / float(len(examples))
 
@@ -93,7 +97,10 @@ class LogReg:
         """
 
         # Your code here
-
+        # (y - sigmoid(beta dot x)) dot x times learning rate
+        gradient = zeros(len(self.beta))
+        gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
+        self.beta += gradient * self.learning_rate
         return self.beta
 
 
@@ -103,6 +110,7 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
 
     :param positive: Positive examples
     :param negative: Negative examples
+
     :param vocab: A list of vocabulary words
     :param test_proprotion: How much of the data should be reserved for test
     """
