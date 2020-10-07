@@ -156,11 +156,11 @@ if __name__ == "__main__":
     argparser.add_argument("--step", help="Initial SG step size",
                            type=float, default=0.1, required=False)
     argparser.add_argument("--positive", help="Positive class",
-                           type=str, default="toy_positive.txt", required=False)
+                           type=str, default="positive", required=False)
     argparser.add_argument("--negative", help="Negative class",
-                           type=str, default="toy_negative.txt", required=False)
+                           type=str, default="negative", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
-                           type=str, default="toy_vocab.txt", required=False)
+                           type=str, default="vocab", required=False)
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
     argparser.add_argument("--regularization", help="Regularization parameter",
@@ -176,27 +176,25 @@ if __name__ == "__main__":
     #print(lr.beta)
     # Iterations
     update_number = 0
+    performance = zeros((len(train)//5*args.passes,4))
     for pp in range(args.passes):
         for ii in train:
             lr.sg_update(ii,args.regularization)
             update_number += 1
-
             
-            performance = zeros((len(train)+len(test),4))
-            
-            '''
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)
                 ho_lp, ho_acc = lr.progress(test)
+                performance[update_number//5]=[train_lp,ho_lp,train_acc,ho_acc]
+           
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
-            '''
+           
     features = dict(zip(vocab, lr.beta))
     features_sorted = dict_sort(features)
-    print(features_sorted)
-    performance = zeros((len(train)+len(test),4))
-    #print(type(features_sorted))
+    #print(features_sorted)
     print("Top 10 features")
     print(list(features_sorted.keys())[:10])
     print("Bottom 10 features ")
     print(list(features_sorted.keys())[-10:])
+    #print(performance)
