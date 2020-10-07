@@ -1,5 +1,6 @@
+# Alex Jian Zheng
 import random
-from numpy import zeros, sign
+from numpy import zeros, sign, dot
 from math import exp, log
 from collections import defaultdict
 
@@ -14,7 +15,7 @@ random.seed(kSEED)
 def sigmoid(score, threshold=20.0):
     """
     Note: Prevents overflow of exp by capping activation at 20.
-
+    The `sign` function returns ``-1 if x < 0, 0 if x==0, 1 if x > 0``
     :param score: A real valued number to convert into a number between 0 and 1
     """
 
@@ -40,9 +41,11 @@ class Example:
         self.nonzero = {}
         self.y = label
         self.x = zeros(len(vocab))
+        #self.prediction = 0
         for word, count in [x.split(":") for x in words]:
             if word in vocab:
                 assert word != kBIAS, "Bias can't actually appear in document"
+                # Creating feature vectors based on term frequency
                 self.x[vocab.index(word)] += float(count)
                 self.nonzero[vocab.index(word)] = word
         self.x[0] = 1
@@ -78,21 +81,29 @@ class LogReg:
                 logprob += log(1.0 - p)
 
             # Get accuracy
+            #ii.prediction = 1 - ii.y
             if abs(ii.y - p) < 0.5:
                 num_right += 1
+                #ii.prediction = ii.y
 
         return logprob, float(num_right) / float(len(examples))
 
-    def sg_update(self, train_example):
+    def sg_update(self, train_example, regularization = 0):
         """
         Compute a stochastic gradient update to improve the log likelihood.
 
         :param train_example: The example to take the gradient with respect to
+        :param regularization: default 0
         :return: The current vector of parameters
         """
 
         # Your code here
-
+        # (y - sigmoid(beta dot x)) dot x times learning rate
+        #learning_rate_updated=abs(step - self.learning_rate)
+        gradient = zeros(len(self.beta))
+        gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
+        #self.beta += gradient * self.learning_rate
+        self.beta += (gradient-self.beta*regularization*2) * self.learning_rate
         return self.beta
 
 
@@ -102,6 +113,7 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
 
     :param positive: Positive examples
     :param negative: Negative examples
+
     :param vocab: A list of vocabulary words
     :param test_proprotion: How much of the data should be reserved for test
     """
@@ -129,18 +141,30 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
 
     return train, test, vocab
 
+def dict_sort(dict_input):
+    aux = [(dict_input[key],key) for key in dict_input]
+    aux.sort()
+    aux.reverse()
+    result = [(w[1],w[0]) for w in aux]
+    result = dict(result)
+    return result
+
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
+    #need to change back to non-toy parameters later
     argparser.add_argument("--step", help="Initial SG step size",
                            type=float, default=0.1, required=False)
     argparser.add_argument("--positive", help="Positive class",
-                           type=str, default="positive", required=False)
+                           type=str, default="toy_positive.txt", required=False)
     argparser.add_argument("--negative", help="Negative class",
-                           type=str, default="negative", required=False)
+                           type=str, default="toy_negative.txt", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
-                           type=str, default="vocab", required=False)
+                           type=str, default="toy_vocab.txt", required=False)
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
+    argparser.add_argument("--regularization", help="Regularization parameter",
+                           type=float, default=0, required=False)
 
     args = argparser.parse_args()
     train, test, vocab = read_dataset(args.positive, args.negative, args.vocab)
@@ -149,16 +173,30 @@ if __name__ == "__main__":
 
     # Initialize model
     lr = LogReg(len(vocab), args.step)
-
+    #print(lr.beta)
     # Iterations
     update_number = 0
     for pp in range(args.passes):
         for ii in train:
+            lr.sg_update(ii,args.regularization)
             update_number += 1
-            lr.sg_update(ii)
 
+            
+            performance = zeros((len(train)+len(test),4))
+            
+            '''
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)
                 ho_lp, ho_acc = lr.progress(test)
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
+            '''
+    features = dict(zip(vocab, lr.beta))
+    features_sorted = dict_sort(features)
+    print(features_sorted)
+    performance = zeros((len(train)+len(test),4))
+    #print(type(features_sorted))
+    print("Top 10 features")
+    print(list(features_sorted.keys())[:10])
+    print("Bottom 10 features ")
+    print(list(features_sorted.keys())[-10:])
