@@ -138,16 +138,26 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
 
     return train, test, vocab
 
+def dict_sort(dict_input):
+    aux = [(dict_input[key],key) for key in dict_input]
+    aux.sort()
+    aux.reverse()
+    result = [(w[1],w[0]) for w in aux]
+    result = dict(result)
+    return result
+
+
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
+    #need to change back to non-toy parameters later
     argparser.add_argument("--step", help="Initial SG step size",
                            type=float, default=0.1, required=False)
     argparser.add_argument("--positive", help="Positive class",
-                           type=str, default="positive", required=False)
+                           type=str, default="toy_positive.txt", required=False)
     argparser.add_argument("--negative", help="Negative class",
-                           type=str, default="negative", required=False)
+                           type=str, default="toy_negative.txt", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
-                           type=str, default="vocab", required=False)
+                           type=str, default="toy_vocab.txt", required=False)
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
 
@@ -158,7 +168,7 @@ if __name__ == "__main__":
 
     # Initialize model
     lr = LogReg(len(vocab), args.step)
-
+    #print(lr.beta)
     # Iterations
     update_number = 0
     for pp in range(args.passes):
@@ -166,8 +176,22 @@ if __name__ == "__main__":
             update_number += 1
             lr.sg_update(ii)
 
+            
+            performance = zeros((len(train)+len(test),4))
+            
+            '''
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)
                 ho_lp, ho_acc = lr.progress(test)
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
+            '''
+    features = dict(zip(vocab, lr.beta))
+    features_sorted = dict_sort(features)
+    print(features_sorted)
+    performance = np.zeros((len(train)+len(test),4))
+    #print(type(features_sorted))
+    print("Top 10 features")
+    print(list(features_sorted.keys())[:10])
+    print("Bottom 10 features ")
+    print(list(features_sorted.keys())[-10:])
