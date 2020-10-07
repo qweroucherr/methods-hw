@@ -194,7 +194,7 @@ if __name__ == "__main__":
     features = dict(zip(vocab, lr.beta))
     features_sorted = dict_sort(features)
     print(features_sorted)
-    performance = np.zeros((len(train)+len(test),4))
+    performance = zeros((len(train)+len(test),4))
     #print(type(features_sorted))
     print("Top 10 features")
     print(list(features_sorted.keys())[:10])
