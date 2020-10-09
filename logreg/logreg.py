@@ -176,7 +176,7 @@ if __name__ == "__main__":
     #print(lr.beta)
     # Iterations
     update_number = 0
-    performance = zeros((len(train)//5*args.passes,4))
+    performance = zeros((len(train)//5*args.passes+1,4))
     for pp in range(args.passes):
         for ii in train:
             lr.sg_update(ii,args.regularization)
