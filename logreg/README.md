@@ -31,9 +31,11 @@ Coding (25 points):
 2. (Optional) Store necessary data in the constructor so you can do classification later. 
    ii.prediction? 
 3. You'll likely need to write some code to get the best/worst features (see below).
-   zip(beta, vocab) into a dict, then sort?
+   Done
 4. Modify the _sg update_ function to perform non-regularized updates.
+   Done
 5. (Extra Credit) Modify the _sg update_ function so that it finds regularized updates.
+   Done
 
 Analysis (5 points):
 
@@ -48,6 +50,8 @@ Extra credit:
     - Supply an appropriate argument to step parameter
     - Support it in your _sg update_
     - Show the effect in your analysis document
+
+   add a boolean argument scheduled in the sg_updata function. 
 2.  Use document frequency (provided in the vocabulary file) to modify the feature values to [tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf).
     - Modify the Example to store the df vector
     - With the appropriate flag, use the *df* vector rather than *x* in the update
