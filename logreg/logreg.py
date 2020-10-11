@@ -88,7 +88,7 @@ class LogReg:
 
         return logprob, float(num_right) / float(len(examples))
 
-    def sg_update(self, train_example, regularization = 0):
+    def sg_update(self, train_example, regularization = 0, step = 0.1, scheduled = False, iteration = 0):
         """
         Compute a stochastic gradient update to improve the log likelihood.
 
@@ -98,8 +98,8 @@ class LogReg:
         """
 
         # Your code here
-        # (y - sigmoid(beta dot x)) dot x times learning rate
-        #learning_rate_updated=abs(step - self.learning_rate)
+        if scheduled == True:
+            self.learning_rate = pow(step,iteration+1)
         gradient = zeros(len(self.beta))
         gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
         #self.beta += gradient * self.learning_rate
@@ -152,19 +152,31 @@ def dict_sort(dict_input):
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
-    #need to change back to non-toy parameters later
+    
     argparser.add_argument("--step", help="Initial SG step size",
                            type=float, default=0.1, required=False)
+    '''
     argparser.add_argument("--positive", help="Positive class",
                            type=str, default="positive", required=False)
     argparser.add_argument("--negative", help="Negative class",
                            type=str, default="negative", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
                            type=str, default="vocab", required=False)
+    '''
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
     argparser.add_argument("--regularization", help="Regularization parameter",
                            type=float, default=0, required=False)
+    argparser.add_argument("--scheduled", help="Scheduled update of learning rate",
+                           type=bool, default=False, required=False)
+    
+    argparser.add_argument("--positive", help="Positive class",
+                           type=str, default="toy_positive.txt", required=False)
+    argparser.add_argument("--negative", help="Negative class",
+                           type=str, default="toy_negative.txt", required=False)
+    argparser.add_argument("--vocab", help="Vocabulary that can be features",
+                           type=str, default="toy_vocab.txt", required=False)
+    
 
     args = argparser.parse_args()
     train, test, vocab = read_dataset(args.positive, args.negative, args.vocab)
@@ -173,13 +185,12 @@ if __name__ == "__main__":
 
     # Initialize model
     lr = LogReg(len(vocab), args.step)
-    #print(lr.beta)
     # Iterations
     update_number = 0
     performance = zeros((len(train)//5*args.passes+1,4))
     for pp in range(args.passes):
         for ii in train:
-            lr.sg_update(ii,args.regularization)
+            lr.sg_update(ii, regularization = args.regularization, step = args.step, scheduled = args.scheduled, iteration = pp)
             update_number += 1
             
             if update_number % 5 == 1:
