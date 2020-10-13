@@ -88,7 +88,7 @@ class LogReg:
 
         return logprob, float(num_right) / float(len(examples))
 
-    def sg_update(self, train_example, regularization = 0, step = 0.1, scheduled = False, iteration = 0):
+    def sg_update(self, train_example, regularization = 0,tfidf = false ):
         """
         Compute a stochastic gradient update to improve the log likelihood.
 
@@ -98,13 +98,16 @@ class LogReg:
         """
 
         # Your code here
-        if scheduled == True:
-            self.learning_rate = pow(step,iteration+1)
+        if tfidf == True:
+            pass
         gradient = zeros(len(self.beta))
         gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
         #self.beta += gradient * self.learning_rate
         self.beta += (gradient-self.beta*regularization*2) * self.learning_rate
         return self.beta
+
+    def update_learning_rate(self,step,iteration):
+        self.learning_rate = pow(step,iteration+1)
 
 
 def read_dataset(positive, negative, vocab, test_proportion=.1):
@@ -139,7 +142,7 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
     random.shuffle(train)
     random.shuffle(test)
 
-    return train, test, vocab
+    return train, test, vocab, df
 
 def dict_sort(dict_input):
     aux = [(dict_input[key],key) for key in dict_input]
@@ -169,7 +172,9 @@ if __name__ == "__main__":
                            type=float, default=0, required=False)
     argparser.add_argument("--scheduled", help="Scheduled update of learning rate",
                            type=bool, default=False, required=False)
-    
+    argparser.add_argument("--tf-idf", help="Using tf-idf as features",
+                           type=bool, default=False, required=False)
+
     argparser.add_argument("--positive", help="Positive class",
                            type=str, default="toy_positive.txt", required=False)
     argparser.add_argument("--negative", help="Negative class",
@@ -179,7 +184,7 @@ if __name__ == "__main__":
     
 
     args = argparser.parse_args()
-    train, test, vocab = read_dataset(args.positive, args.negative, args.vocab)
+    train, test, vocab, df = read_dataset(args.positive, args.negative, args.vocab)
 
     print("Read in %i train and %i test" % (len(train), len(test)))
 
@@ -189,8 +194,10 @@ if __name__ == "__main__":
     update_number = 0
     performance = zeros((len(train)//5*args.passes+1,4))
     for pp in range(args.passes):
+        if args.scheduled == True:
+            lr.update_learning_rate(args.step, pp)
         for ii in train:
-            lr.sg_update(ii, regularization = args.regularization, step = args.step, scheduled = args.scheduled, iteration = pp)
+            lr.sg_update(ii, regularization = args.regularization)
             update_number += 1
             
             if update_number % 5 == 1:
