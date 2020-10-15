@@ -28,8 +28,8 @@ Coding (25 points):
 
 1. Understand how the code is creating feature vectors (this will help you code the solution and to do the later analysis).  You don't actually need to write any code for this, however.
    Feature vectors are created on term frequency, the features are stored in the vocab file, and the cases are lines in positive and negative files.
-2. (Optional) Store necessary data in the constructor so you can do classification later. 
-   ii.prediction? 
+2. (Optional) Store necessary data in the constructor so you can do classification later.
+   ii.prediction?
 3. You'll likely need to write some code to get the best/worst features (see below).
    Done
 4. Modify the _sg update_ function to perform non-regularized updates.
@@ -51,11 +51,12 @@ Extra credit:
     - Support it in your _sg update_
     - Show the effect in your analysis document
 
-   add a boolean argument scheduled in the sg_updata function. 
-2.  Use document frequency (provided in the vocabulary file) to modify the feature values to [tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf).
+   add a boolean argument scheduled in the sg_updata function.
+2. Use document frequency (provided in the vocabulary file) to modify the feature values to [tf-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf).
     - Modify the Example to store the df vector
     - With the appropriate flag, use the *df* vector rather than *x* in the update
     - Show the effect in your analysis document
+  
 3.  Implement lazy updating for regularized updates
 
 Caution: When implementing extra credit, make sure your implementation of the

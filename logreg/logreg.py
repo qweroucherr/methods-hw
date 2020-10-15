@@ -1,6 +1,6 @@
 # Alex Jian Zheng
 import random
-from numpy import zeros, sign, dot
+import numpy as np
 from math import exp, log
 from collections import defaultdict
 
@@ -15,12 +15,12 @@ random.seed(kSEED)
 def sigmoid(score, threshold=20.0):
     """
     Note: Prevents overflow of exp by capping activation at 20.
-    The `sign` function returns ``-1 if x < 0, 0 if x==0, 1 if x > 0``
+    The `np.sign` function returns ``-1 if x < 0, 0 if x==0, 1 if x > 0``
     :param score: A real valued number to convert into a number between 0 and 1
     """
 
     if abs(score) > threshold:
-        score = threshold * sign(score)
+        score = threshold * np.sign(score)
 
     activation = exp(score)
     return activation / (1.0 + activation)
@@ -40,8 +40,8 @@ class Example:
         """
         self.nonzero = {}
         self.y = label
-        self.x = zeros(len(vocab))
-        #self.prediction = 0
+        self.x = np.zeros(len(vocab))
+        self.df = np.array(df)
         for word, count in [x.split(":") for x in words]:
             if word in vocab:
                 assert word != kBIAS, "Bias can't actually appear in document"
@@ -49,10 +49,19 @@ class Example:
                 self.x[vocab.index(word)] += float(count)
                 self.nonzero[vocab.index(word)] = word
         self.x[0] = 1
-
+    
+    def tfidf(self,tnd):
+        #param tnd: total number of document
+        tf = self.x/sum(self.x)
+        self.df[0]=tnd
+        #idf = [log(tnd/k) for k in df]
+        idf = np.log(tnd/self.df)
+        self.x = tf*idf
+        self.x[0] = 1
+    
 
 class LogReg:
-    def __init__(self, num_features, learning_rate=0.05):
+    def __init__(self, num_features, learning_rate=0.05, idf=False,tnd=1):
         """
         Create a logistic regression classifier
 
@@ -60,8 +69,10 @@ class LogReg:
         :param learning_rate: How big of a SG step we take
         """
 
-        self.beta = zeros(num_features)
+        self.beta = np.zeros(num_features)
         self.learning_rate = learning_rate
+        self.idf = idf
+        self.tnd = tnd
 
     def progress(self, examples):
         """
@@ -74,21 +85,19 @@ class LogReg:
         logprob = 0.0
         num_right = 0
         for ii in examples:
-            p = sigmoid(self.beta.dot(ii.x))
+            if self.idf == True:
+                ii.tfidf(self.tnd)
+            p = sigmoid(np.dot(self.beta,ii.x))
             if ii.y == 1:
                 logprob += log(p)
             else:
                 logprob += log(1.0 - p)
-
-            # Get accuracy
-            #ii.prediction = 1 - ii.y
             if abs(ii.y - p) < 0.5:
                 num_right += 1
-                #ii.prediction = ii.y
 
         return logprob, float(num_right) / float(len(examples))
 
-    def sg_update(self, train_example, regularization = 0,tfidf = false ):
+    def sg_update(self, train_example, regularization = 0):
         """
         Compute a stochastic gradient update to improve the log likelihood.
 
@@ -98,11 +107,12 @@ class LogReg:
         """
 
         # Your code here
-        if tfidf == True:
-            pass
-        gradient = zeros(len(self.beta))
-        gradient = train_example.x * (train_example.y - sigmoid(self.beta.dot(train_example.x)))
-        #self.beta += gradient * self.learning_rate
+        
+        if self.idf == True:
+            train_example.tfidf(self.tnd)
+        #print(train_example.x)
+        gradient = np.zeros(len(self.beta))
+        gradient = train_example.x * (train_example.y - sigmoid(np.dot(self.beta,train_example.x)))
         self.beta += (gradient-self.beta*regularization*2) * self.learning_rate
         return self.beta
 
@@ -158,61 +168,64 @@ if __name__ == "__main__":
     
     argparser.add_argument("--step", help="Initial SG step size",
                            type=float, default=0.1, required=False)
-    '''
+    #''' for switch between the toy and real examples
     argparser.add_argument("--positive", help="Positive class",
                            type=str, default="positive", required=False)
     argparser.add_argument("--negative", help="Negative class",
                            type=str, default="negative", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
                            type=str, default="vocab", required=False)
-    '''
+    #'''
     argparser.add_argument("--passes", help="Number of passes through train",
                            type=int, default=1, required=False)
     argparser.add_argument("--regularization", help="Regularization parameter",
                            type=float, default=0, required=False)
     argparser.add_argument("--scheduled", help="Scheduled update of learning rate",
                            type=bool, default=False, required=False)
-    argparser.add_argument("--tf-idf", help="Using tf-idf as features",
+    argparser.add_argument("--tfidf", help="Using tfidf as features",
                            type=bool, default=False, required=False)
-
+    ''' for switch between the toy and real examples
     argparser.add_argument("--positive", help="Positive class",
                            type=str, default="toy_positive.txt", required=False)
     argparser.add_argument("--negative", help="Negative class",
                            type=str, default="toy_negative.txt", required=False)
     argparser.add_argument("--vocab", help="Vocabulary that can be features",
                            type=str, default="toy_vocab.txt", required=False)
-    
+    '''
 
     args = argparser.parse_args()
     train, test, vocab, df = read_dataset(args.positive, args.negative, args.vocab)
-
+    tnd = len(train)+len(test)
     print("Read in %i train and %i test" % (len(train), len(test)))
 
     # Initialize model
-    lr = LogReg(len(vocab), args.step)
+    lr = LogReg(len(vocab), args.step,idf=args.tfidf,tnd=tnd)
     # Iterations
     update_number = 0
-    performance = zeros((len(train)//5*args.passes+1,4))
+    performance = np.zeros((len(train)*args.passes//5+1,4))
     for pp in range(args.passes):
         if args.scheduled == True:
             lr.update_learning_rate(args.step, pp)
         for ii in train:
+        #for ii in test:
             lr.sg_update(ii, regularization = args.regularization)
+            
             update_number += 1
             
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)
                 ho_lp, ho_acc = lr.progress(test)
                 performance[update_number//5]=[train_lp,ho_lp,train_acc,ho_acc]
-           
+                #'''
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
-           
+                #'''
+    #The following code is for determining the best and worst predictors       
+    '''
     features = dict(zip(vocab, lr.beta))
     features_sorted = dict_sort(features)
-    #print(features_sorted)
     print("Top 10 features")
     print(list(features_sorted.keys())[:10])
     print("Bottom 10 features ")
     print(list(features_sorted.keys())[-10:])
-    #print(performance)
+    '''
