@@ -51,10 +51,12 @@ class Example:
         self.x[0] = 1
     
     def tfidf(self,tnd):
-        #param tnd: total number of document
+        '''
+        using tf-idf to replace term frequency as the features
+        :param tnd: The total number of documents
+        '''
         tf = self.x/sum(self.x)
         self.df[0]=tnd
-        #idf = [log(tnd/k) for k in df]
         idf = np.log(tnd/self.df)
         self.x = tf*idf
         self.x[0] = 1
@@ -67,6 +69,8 @@ class LogReg:
 
         :param num_features: The number of features (including bias)
         :param learning_rate: How big of a SG step we take
+        :param idf: Using tf-id to replace term frequency as the features 
+        :param tnd: The total number of documents
         """
 
         self.beta = np.zeros(num_features)
@@ -107,10 +111,8 @@ class LogReg:
         """
 
         # Your code here
-        
         if self.idf == True:
             train_example.tfidf(self.tnd)
-        #print(train_example.x)
         gradient = np.zeros(len(self.beta))
         gradient = train_example.x * (train_example.y - sigmoid(np.dot(self.beta,train_example.x)))
         self.beta += (gradient-self.beta*regularization*2) * self.learning_rate
@@ -155,6 +157,9 @@ def read_dataset(positive, negative, vocab, test_proportion=.1):
     return train, test, vocab, df
 
 def dict_sort(dict_input):
+    '''
+    A function to sort the final weights
+    '''
     aux = [(dict_input[key],key) for key in dict_input]
     aux.sort()
     aux.reverse()
@@ -207,7 +212,6 @@ if __name__ == "__main__":
         if args.scheduled == True:
             lr.update_learning_rate(args.step, pp)
         for ii in train:
-        #for ii in test:
             lr.sg_update(ii, regularization = args.regularization)
             
             update_number += 1
@@ -215,11 +219,11 @@ if __name__ == "__main__":
             if update_number % 5 == 1:
                 train_lp, train_acc = lr.progress(train)
                 ho_lp, ho_acc = lr.progress(test)
+                #''' To store the performance for plots in the analysis
                 performance[update_number//5]=[train_lp,ho_lp,train_acc,ho_acc]
                 #'''
                 print("Update %i\tTP %f\tHP %f\tTA %f\tHA %f" %
                       (update_number, train_lp, ho_lp, train_acc, ho_acc))
-                #'''
     #The following code is for determining the best and worst predictors       
     '''
     features = dict(zip(vocab, lr.beta))
